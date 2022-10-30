@@ -84,13 +84,13 @@ doCreateFstab(){
 }
 
 doScriptConfigSystem(){
-    cp ~/arch1/config_system /mnt/home
+    cp ~/easy_arch/config_system /mnt/home
     arch-chroot /mnt sh /home/config_system
     rm /mnt/home/config_system
 }
 
 doScriptMiEnviroment(){
-    cp ~/arch1/mi_enviroment /mnt/home/$user
+    cp ~/easy_arch/mi_enviroment /mnt/home/$user
     arch-chroot /mnt su $user -c "cd /home/$user; bash /home/$user/mi_enviroment"
     rm /mnt/home/$user/mi_enviroment
 }
