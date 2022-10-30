@@ -1,0 +1,70 @@
+#!/bin/bash
+
+set -eu
+
+user="manu"
+namehost="eybolo"
+
+RED="\e[31m"
+GREEN="\e[32m"
+BLUE="\e[34m"
+MAGENTA="\e[35m"
+ENDCOLOR="\e[0m"
+
+status_command(){
+    $1  && (echo -e "$run ${GREEN}>>>>> OK${ENDCOLOR}"; exit 0) || (code=$?; echo -e "$run ${RED}>>>>> FAILED${ENDCOLOR}"; (echo -e "${MAGENTA}Code Error $code${ENDCOLOR}"; exit $code))
+}
+
+doSetHostname(){
+    echo $namehost > /etc/hostname
+}
+
+doSetHosts(){
+    echo "127.0.0.1 localhost" >> /etc/hosts
+    echo "127.0.1.1 $namehost" >> /etc/hosts
+}
+
+doSetPasswdRoot(){
+    echo "root:123123" | chpasswd
+}
+  
+doSetDateTime(){
+    ln -sf /usr/share/zoneinfo/America/Argentina/Buenos_Aires /etc/localtime
+    hwclock --systohc
+}
+    
+doSetLocale(){
+    sed -i '/en_US.UTF-8 UTF-8/s/^#//g' /etc/locale.gen
+    locale-gen
+    echo "LANG=en_US.UTF-8" >> /etc/locale.conf
+}
+
+doInstallBootloader(){
+    grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=arch
+    grub-mkconfig -o /boot/grub/grub.cfg
+}
+
+doCreateUser(){
+    useradd -m -G wheel,power,input,storage,uucp,network,video,audio -s /bin/zsh $user
+    echo "$user:123123" | chpasswd
+}
+
+doUserSudo(){
+    sed --in-place 's/^#\s*\(%wheel\s\+ALL=(ALL:ALL)\s\+NOPASSWD:\s\+ALL\)/\1/' /etc/sudoers
+}
+
+run_root=(
+    doSetHostname \
+    doSetHosts \
+    doSetPasswdRoot \ 
+    doSetDateTime \
+    doSetLocale \
+    doInstallBootloader \
+    doCreateUser \
+    doUserSudo \
+)
+
+for run in ${run_root[@]}; do
+    printf "\n${BLUE}Execute $run${ENDCOLOR}\n" ; sleep 2
+    status_command $run
+done

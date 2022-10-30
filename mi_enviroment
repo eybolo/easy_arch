@@ -1,0 +1,93 @@
+#!/bin/bash
+
+set -eu
+
+user="manu"
+RED="\e[31m"
+GREEN="\e[32m"
+ORANGE="\e[33m"
+BLUE="\e[34m"
+MAGENTA="\e[35m"
+ENDCOLOR="\e[0m"
+
+list_pacman=( curl wget openssh xorg-server xorg-xinit xorg-xset gtk3 base-devel \
+    rofi kitty feh gvim go pulseaudio pulseaudio-alsa pavucontrol alsa-utils \
+    wpa_supplicant git acpi trash-cli ttc-iosevka ttf-font-awesome  \ 
+    lm_sensors firefox clipmenu  nodejs npm)
+
+list_yay=( betterlockscreen ttf-nerd-fonts-hack-complete-git lf-git keyd-git awesome-git )
+
+status_command(){
+    $1  && (echo -e "$run ${GREEN}OK${ENDCOLOR}"; exit 0) || (code=$?; echo -e "$run ${RED}FAILED${ENDCOLOR}"; (echo -e "${BLUE}Code Error $code${ENDCOLOR}"; exit $code))
+}
+
+doInstallAppPacman(){
+    for app_pacman in ${list_pacman[@]}; do
+        printf "\n${ORANGE}Execute APP PACMAN $app_pacman${ENDCOLOR}\n" ; sleep 2
+        sudo pacman -S --noconfirm --needed $app_pacman > /dev/null && (echo -e "$app_pacman ${GREEN}>>>>> OK${ENDCOLOR}"; exit 0) || (code=$?; echo -e "$app_pacman ${RED}>>>>> FAILED${ENDCOLOR}"; (echo -e "${MAGENTA}Code Error $code${ENDCOLOR}"; exit $code))
+    done
+}
+
+doInstallYay(){
+    git clone https://aur.archlinux.org/yay.git
+    cd yay
+    echo y | makepkg -si
+    cd 
+}
+
+doInstallAppYay(){
+    for app_yay in ${list_yay[@]}; do
+        printf "\n${ORANGE}Execute APP YAY $app_yay${ENDCOLOR}\n" ; sleep 2
+        yay -S --noconfirm  $app_yay > /dev/null && (echo -e "$app_yay ${GREEN}OK${ENDCOLOR}"; exit 0) || (code=$?; echo -e "$app_yay ${RED}FAILED${ENDCOLOR}"; (echo -e "${BLUE}Code Error $code${ENDCOLOR}"; exit $code))
+    done
+}
+
+doInstallOhMyZsh(){
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+}
+
+doZshPlugins(){
+    git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
+    git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+}
+
+doInstallPowerlevelok(){
+    git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k
+}
+
+doInstallDOTFILES(){
+    curl -Lks https://raw.githubusercontent.com/eybolo/dotfiles/main/.bin/install.sh | /bin/bash
+}
+
+doLinks(){
+    /usr/bin/sudo ln -sf /home/$user/.bin/init.lua /usr/share/awesome/lib/awful/hotkeys_popup/keys/init.lua
+    /usr/bin/sudo ln -sf /home/$user/.bin/kitty.lua /usr/share/awesome/lib/awful/hotkeys_popup/keys/kitty.lua
+    /usr/bin/sudo ln -sf /home/$user/.config/keyd/default.conf /etc/keyd/default.conf
+}
+
+doEnableServices(){
+    /usr/bin/sudo systemctl enable NetworkManager 
+    /usr/bin/sudo systemctl enable sshd
+    /usr/bin/sudo systemctl enable keyd 
+    /usr/bin/sudo systemctl enable betterlockscreen@$USER
+}
+
+run_user=(
+doInstallAppPacman
+doInstallYay
+doInstallAppYay
+doInstallOhMyZsh
+doZshPlugins
+doInstallPowerlevelok
+doInstallDOTFILES
+doLinks
+doEnableServices
+)
+
+
+for run in ${run_user[@]}; do
+    printf "\n${BLUE}Execute $run${ENDCOLOR}\n" ; sleep 2
+    status_command $run
+done
+
+exit
