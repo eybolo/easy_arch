@@ -12,9 +12,9 @@ ENDCOLOR="\e[0m"
 
 list_pacman=( curl wget openssh xorg-server xorg-xinit xorg-xset gtk3 base-devel \
     rofi kitty feh gvim go pulseaudio pulseaudio-alsa pavucontrol alsa-utils \
-    wpa_supplicant git acpi trash-cli ttc-iosevka ttf-font-awesome  otf-cascadia-codev \ 
-    lm_sensors firefox clipmenu  nodejs npm brightnessctl netfs-3g redshift udisks2 \
-    flameshot neofetch zip unzip )
+    wpa_supplicant git acpi trash-cli ttc-iosevka ttf-font-awesome  otf-cascadia-code \ 
+    lm_sensors firefox clipmenu  nodejs npm brightnessctl ntfs-3g redshift udisks2 \
+    flameshot neofetch zip unzip btop)
 
 list_yay=( betterlockscreen ttf-nerd-fonts-hack-complete-git lf-git keyd-git awesome-git  picom-jonaburg-git )
 
@@ -66,13 +66,6 @@ doThemeKitty(){
     ln -s /home/$user/.config/kitty/kitty-themes/themes/Argonaut.conf /home/$user/.config/kitty/theme.conf
 }
 
-doGeoclueRedshift(){
-    sudo echo "[redshift]" >> /etc/geoclue/geoclue.conf
-    sudo echo "allowed=true" >> /etc/geoclue/geoclue.conf
-    sudo echo "system=false" >> /etc/geoclue/geoclue.conf
-    sudo echo "users=" >> /etc/geoclue/geoclue.conf
-}
-
 doLinks(){
     /usr/bin/sudo ln -sf /home/$user/.bin/init.lua /usr/share/awesome/lib/awful/hotkeys_popup/keys/init.lua
     /usr/bin/sudo ln -sf /home/$user/.bin/kitty.lua /usr/share/awesome/lib/awful/hotkeys_popup/keys/kitty.lua
@@ -97,7 +90,6 @@ doZshPlugins
 doInstallPowerlevelok
 doInstallDOTFILES
 doThemeKitty
-doGeoclueRedshift
 doLinks
 doEnableServices
 )

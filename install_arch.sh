@@ -33,9 +33,9 @@ doCreatePartitions(){
     echo "This script will create and format the partitions as follows:"
     echo "/dev/sda1 - 512Mib will be mounted as /boot/efi"
     echo "/dev/sda2 - 2GB will be used as swap"
-    echo "/dev/sda3 - 5GB will be used in /"
+    echo "/dev/sda3 - 40GB will be used in /"
     echo "/dev/sda4 - rest of space will be mounted as Home"
-
+    sleep 5
     # to create the partitions programatically (rather than manually)
     # https://superuser.com/a/984637
     sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' << EOF | fdisk /dev/sda
@@ -51,7 +51,7 @@ doCreatePartitions(){
       n # new partition
       3 # partion number 3
         # default, start immediately after preceding partition
-      +6G # 6 GB root 
+      +40G # 6 GB root 
       n # new partition
       4 # partion number 4
         # default, start immediately after preceding partition
