@@ -10,17 +10,43 @@ BLUE="\e[34m"
 MAGENTA="\e[35m"
 ENDCOLOR="\e[0m"
 
-list_pacman=( curl wget openssh xorg-server xorg-xinit xorg-xset gtk3 base-devel \
+list_pacman=( curl wget openssh xorg-server xorg-xinit xorg-xset xorg-xrandr gtk3 base-devel \
     rofi kitty feh gvim go pulseaudio pulseaudio-alsa pavucontrol alsa-utils \
     wpa_supplicant git acpi trash-cli ttc-iosevka ttf-font-awesome  otf-cascadia-code \ 
     lm_sensors firefox clipmenu  nodejs npm brightnessctl ntfs-3g redshift udisks2 \
-    flameshot neofetch zip unzip btop)
+    flameshot neofetch zip unzip btop ruby fzf bat bluez bluez-utils)
 
 list_yay=( betterlockscreen ttf-nerd-fonts-hack-complete-git lf-git keyd-git awesome-git  picom-jonaburg-git )
 
 status_command(){
     $1  && (echo -e "$run ${GREEN}OK${ENDCOLOR}"; exit 0) || (code=$?; echo -e "$run ${RED}FAILED${ENDCOLOR}"; (echo -e "${BLUE}Code Error $code${ENDCOLOR}"; exit $code))
 }
+
+doCreateFolder(){
+    path_folder=(
+        $HOME/.config 
+        $HOME/.cache 
+        $HOME/.local/share 
+        $HOME/project 
+        $HOME/code 
+        $HOME/backup 
+        $HOME/app 
+        $HOME/tmp 
+        $HOME/download 
+        $HOME/image 
+        $HOME/doc 
+        $HOME/video 
+        $HOME/vm 
+    )
+
+    for folder in ${path_folder[@]}; do 
+        if [ ! -d $folder ]; then
+            mkdir -p $folder;
+        fi
+    done
+     
+}
+
 
 doInstallAppPacman(){
     for app_pacman in ${list_pacman[@]}; do
@@ -63,7 +89,11 @@ doInstallDOTFILES(){
 doThemeKitty(){
     THEME=https://raw.githubusercontent.com/dexpota/kitty-themes/master/themes/Argonaut.conf
     wget "$THEME" -P ~/.config/kitty/kitty-themes/themes
-    ln -s /home/$user/.config/kitty/kitty-themes/themes/Argonaut.conf /home/$user/.config/kitty/theme.conf
+    ln -s /home/$user/.config/kitty/kitty-themes/themes/Spacedust.conf /home/$user/.config/kitty/theme.conf
+}
+
+doGemRuby(){
+    gem install colorls
 }
 
 doLinks(){
@@ -82,6 +112,7 @@ doEnableServices(){
 }
 
 run_user=(
+doCreateFolder
 doInstallAppPacman
 doInstallYay
 doInstallAppYay
@@ -90,6 +121,7 @@ doZshPlugins
 doInstallPowerlevelok
 doInstallDOTFILES
 doThemeKitty
+doGemRuby
 doLinks
 doEnableServices
 )
