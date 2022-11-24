@@ -87,7 +87,7 @@ doInstallDOTFILES(){
 }
 
 doThemeKitty(){
-    THEME=https://raw.githubusercontent.com/dexpota/kitty-themes/master/themes/Argonaut.conf
+    THEME=https://raw.githubusercontent.com/dexpota/kitty-themes/master/themes/Spacedust.conf
     wget "$THEME" -P ~/.config/kitty/kitty-themes/themes
     ln -s /home/$user/.config/kitty/kitty-themes/themes/Spacedust.conf /home/$user/.config/kitty/theme.conf
 }
