@@ -1,70 +1,147 @@
 #!/bin/bash
+# Script de configuración del sistema base de Arch Linux
+# Se ejecuta dentro de arch-chroot como root
+# Configura hostname, zona horaria, locale, bootloader y usuario
 
-set -eu
+set -eu  # Salir en error y tratar variables no definidas como error
 
-user="manu"
-namehost="eybolo"
+# ===========================
+# Recibir argumentos
+# ===========================
+user="${1}"        # Nombre del usuario a crear
+hostname="${2}"    # Nombre del host del sistema 
 
+# ===========================
+# Códigos de color ANSI para mensajes de terminal
+# ===========================
 RED="\e[31m"
 GREEN="\e[32m"
 BLUE="\e[34m"
 MAGENTA="\e[35m"
 ENDCOLOR="\e[0m"
 
+# ===========================
+# Función auxiliar
+# ===========================
+
+# Ejecuta un comando y muestra estado visual de éxito/fallo
+# NOTA: Esta función tiene un bug - usa 'exit 0' en caso de éxito
+# lo cual termina el script prematuramente. Ver solución más abajo.
 status_command(){
-    $1  && (echo -e "$run ${GREEN}>>>>> OK${ENDCOLOR}"; exit 0) || (code=$?; echo -e "$run ${RED}>>>>> FAILED${ENDCOLOR}"; (echo -e "${MAGENTA}Code Error $code${ENDCOLOR}"; exit $code))
+    $1 && (echo -e "$run ${GREEN}>>>>> OK${ENDCOLOR}"; exit 0) \
+    || (code=$?; echo -e "$run ${RED}>>>>> FAILED${ENDCOLOR}"; \
+    (echo -e "${MAGENTA}Code Error $code${ENDCOLOR}"; exit $code))
 }
 
+# ===========================
+# Funciones de configuración del sistema
+# ===========================
+
+# Establece el nombre del host (hostname)
+# El hostname identifica la máquina en la red
 doSetHostname(){
-    echo $namehost > /etc/hostname
+    echo $hostname > /etc/hostname
 }
 
+# Configura el archivo /etc/hosts
+# Define la resolución de nombres local (localhost y hostname)
 doSetHosts(){
     echo "127.0.0.1 localhost" >> /etc/hosts
-    echo "127.0.1.1 $namehost" >> /etc/hosts
+    echo "127.0.1.1 $hostname" >> /etc/hosts
 }
 
+# Establece la contraseña del usuario root
+# ADVERTENCIA: Contraseña débil solo para pruebas
+# TODO: Usar contraseña segura en producción
 doSetPasswdRoot(){
     echo "root:123123" | chpasswd
 }
-  
+
+# Configura la zona horaria del sistema
+# Crea un enlace simbólico de la zona horaria a /etc/localtime
+# y sincroniza el reloj de hardware con el del sistema
 doSetDateTime(){
     ln -sf /usr/share/zoneinfo/America/Argentina/Buenos_Aires /etc/localtime
-    hwclock --systohc
-}
-    
-doSetLocale(){
-    sed -i '/en_US.UTF-8 UTF-8/s/^#//g' /etc/locale.gen
-    locale-gen
-    echo "LANG=en_US.UTF-8" >> /etc/locale.conf
+    hwclock --systohc  # Sincronizar reloj de hardware con sistema
 }
 
+# Configura el idioma del sistema (locale)
+# Descomenta en_US.UTF-8 en locale.gen, genera locales
+# y establece el idioma por defecto
+doSetLocale(){
+    # Descomentar la línea en_US.UTF-8 en /etc/locale.gen
+    sed -i '/en_US.UTF-8 UTF-8/s/^#//g' /etc/locale.gen
+    locale-gen  # Generar los locales
+    echo "LANG=en_US.UTF-8" >> /etc/locale.conf  # Establecer idioma por defecto
+}
+
+# Instala y configura el bootloader GRUB
+# GRUB (GRand Unified Bootloader) permite arrancar el sistema
 doInstallBootloader(){
+    # Instalar GRUB en modo UEFI
     grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=arch
+    # Generar el archivo de configuración de GRUB
     grub-mkconfig -o /boot/grub/grub.cfg
 }
 
+# Crea el usuario del sistema con configuración completa
+# Añade el usuario a grupos importantes para permisos de hardware y sudo
 doCreateUser(){
-    useradd -m -G wheel,power,input,storage,uucp,network,video,audio -s /bin/zsh $user
+    # -m: crear directorio home
+    # -G: añadir a grupos adicionales
+    # -s: shell por defecto (zsh)
+    useradd -m \
+        -G wheel,power,input,storage,uucp,network,video,audio \
+        -s /bin/zsh $user
+    
+    # Establecer contraseña del usuario
+    # ADVERTENCIA: Contraseña débil solo para pruebas
     echo "$user:123123" | chpasswd
 }
 
+# Habilita permisos sudo sin contraseña para el grupo wheel
+# Permite que los usuarios del grupo wheel ejecuten comandos como root
 doUserSudo(){
+    # Descomentar la línea que permite sudo sin contraseña para wheel
     sed --in-place 's/^#\s*\(%wheel\s\+ALL=(ALL:ALL)\s\+NOPASSWD:\s\+ALL\)/\1/' /etc/sudoers
 }
 
+# ===========================
+# Ejecución principal
+# ===========================
+
+# Array de funciones a ejecutar secuencialmente
+# Estas configuran todos los aspectos básicos del sistema
 run_root=(
-    doSetHostname \
-    doSetHosts \
-    doSetPasswdRoot \ 
-    doSetDateTime \
-    doSetLocale \
-    doInstallBootloader \
-    doCreateUser \
-    doUserSudo \
+    doSetHostname
+    doSetHosts
+    doSetPasswdRoot
+    doSetDateTime
+    doSetLocale
+    doInstallBootloader
+    doCreateUser
+    doUserSudo
 )
 
+# Ejecutar cada función del array en orden
 for run in ${run_root[@]}; do
-    printf "\n${BLUE}Execute $run${ENDCOLOR}\n" ; sleep 2
+    printf "\n${BLUE}Execute $run${ENDCOLOR}\n"
+    sleep 2
     status_command $run
 done
+
+# ===========================
+# CORRECCIÓN SUGERIDA para status_command:
+# ===========================
+# La función actual termina el script con 'exit 0' incluso en éxito.
+# Versión corregida:
+#
+# status_command(){
+#     $1 && echo -e "$run ${GREEN}>>>>> OK${ENDCOLOR}" \
+#     || {
+#         code=$?
+#         echo -e "$run ${RED}>>>>> FAILED${ENDCOLOR}"
+#         echo -e "${MAGENTA}Code Error $code${ENDCOLOR}"
+#         exit $code
+#     }
+# }

@@ -1,8 +1,22 @@
 #!/bin/bash
+# Script de configuración personal del usuario
+# Instala aplicaciones, configuraciones, dotfiles y entorno de desarrollo
+# Se ejecuta dentro de arch-chroot como usuario no-root
 
-set -eu
+set -eu  # Salir en error y tratar variables no definidas como error
 
-user="manu"
+# ===========================
+# Recibir argumentos
+# ===========================
+user="${1}"        # Nombre del usuario a crear
+
+
+# Recibir nombre de usuario como argumento
+user="${1}"
+
+# ===========================
+# Códigos de color ANSI
+# ===========================
 RED="\e[31m"
 GREEN="\e[32m"
 ORANGE="\e[33m"
@@ -10,125 +24,242 @@ BLUE="\e[34m"
 MAGENTA="\e[35m"
 ENDCOLOR="\e[0m"
 
-list_pacman=( curl wget openssh xorg-server xorg-xinit xorg-xset xorg-xrandr gtk3 base-devel \
-    rofi kitty feh gvim go pulseaudio pulseaudio-alsa pavucontrol alsa-utils \
-    wpa_supplicant git acpi trash-cli ttc-iosevka ttf-font-awesome  otf-cascadia-code \ 
-    lm_sensors firefox clipmenu  nodejs npm brightnessctl ntfs-3g redshift udisks2 \
-    flameshot neofetch zip unzip btop ruby fzf bat bluez bluez-utils)
+# ===========================
+# Función auxiliar
+# ===========================
 
-list_yay=( betterlockscreen ttf-nerd-fonts-hack-complete-git lf-git keyd-git awesome-git  picom-jonaburg-git )
-
+# Ejecuta un comando y muestra estado visual de éxito/fallo
+# Parámetro: $1 = nombre de la función a ejecutar
+# Sale del script si el comando falla
 status_command(){
-    $1  && (echo -e "$run ${GREEN}OK${ENDCOLOR}"; exit 0) || (code=$?; echo -e "$run ${RED}FAILED${ENDCOLOR}"; (echo -e "${BLUE}Code Error $code${ENDCOLOR}"; exit $code))
+    $1 && (echo -e "$run ${GREEN}OK${ENDCOLOR}"; exit 0) \
+    || (code=$?; echo -e "$run ${RED}FAILED${ENDCOLOR}"; \
+    (echo -e "${BLUE}Code Error $code${ENDCOLOR}"; exit $code))
 }
 
+# ===========================
+# Listas de paquetes a instalar
+# ===========================
+
+# Paquetes oficiales de Arch (repositorios principales)
+list_pacman=(
+    # Servidor X
+    xorg-server xorg-xinit xorg-xset xorg-xrandr gtk3
+    
+    # Aplicaciones de terminal
+    kitty rofi fastfetch btop fzf bat trash-cli
+
+    # Utilidades sistema 
+    zip unzip lm_sensors acpi brightnessctl ntfs-3g udisks2 udiskie man-db texinfo man-pages
+    ddcutil tree dunst
+
+    # Aplicaciones graficas
+    feh firefox redshift flameshot thunar tumbler picom lxappearance
+
+    # Network y WIfi
+    networkmanager wpa_supplicant openssh curl wget
+
+    # Monitoreo GPU AMD
+    rocm-smi-lib
+
+    # Bluetooth 
+    bluez bluez-utils  
+
+    # Audio
+    pulseaudio pulseaudio-alsa pavucontrol alsa-utils
+
+    # Fuentes
+    ttc-iosevka ttf-font-awesome otf-cascadia-code inter-font ttf-hack-nerd
+
+    # Editoores y Desarrollo
+    base-devel nano vim git go nodejs ruby npm 
+)
+
+# Paquetes de AUR (Arch User Repository) - requieren yay
+list_yay=( 
+    # Window Manager
+    awesome-git
+
+    # Bloqueador de pantalla 
+    betterlockscreen 
+
+    # Fuentes
+    ttf-nerd-fonts-symbols
+
+    # Utilidad sistema
+    keyd-git rofi-greenclip
+
+    # temas GTK
+    otis-theme-git  papirus-icon-theme-git
+    #tela-icon-theme
+    #openrgb-git
+    #lf-git
+    #picom-jonaburg-git 
+)
+
+# ===========================
+# Funciones de configuración
+# ===========================
+
+# Crea la estructura de directorios del usuario
+# Organiza el home en carpetas para proyectos, código, backups, etc.
 doCreateFolder(){
     path_folder=(
-        $HOME/.config 
-        $HOME/.cache 
-        $HOME/.local/share 
-        $HOME/project 
-        $HOME/code 
-        $HOME/backup 
-        $HOME/app 
-        $HOME/tmp 
-        $HOME/download 
-        $HOME/image 
-        $HOME/doc 
-        $HOME/video 
-        $HOME/vm 
+        $HOME/project              # Proyectos personales
+        $HOME/code                 # Código fuente
+        $HOME/app                  # Aplicaciones descargadas
+        $HOME/tmp                  # Archivos temporales
+        $HOME/download             # Descargas
+        $HOME/doc                  # Documentos
+        $HOME/media                # Contenido multimedia
+        $HOME/media/image          # Imágenes y fotos
+        $HOME/media/wallpaper      # Fondos de pantalla
+        $HOME/media/video          # Videos
+        $HOME/media/screenshot     # Capturas de pantalla (opcional)
+        $HOME/vm                   # Máquinas virtuales
     )
 
     for folder in ${path_folder[@]}; do 
         if [ ! -d $folder ]; then
-            mkdir -p $folder;
+            mkdir -p $folder
         fi
     done
-     
 }
 
-
+# Instala paquetes desde los repositorios oficiales de Arch
+# Itera sobre list_pacman e instala cada paquete con pacman
 doInstallAppPacman(){
     for app_pacman in ${list_pacman[@]}; do
-        printf "\n${ORANGE}Execute APP PACMAN $app_pacman${ENDCOLOR}\n" ; sleep 2
-        sudo pacman -S --noconfirm --needed $app_pacman > /dev/null && (echo -e "$app_pacman ${GREEN}>>>>> OK${ENDCOLOR}"; exit 0) || (code=$?; echo -e "$app_pacman ${RED}>>>>> FAILED${ENDCOLOR}"; (echo -e "${MAGENTA}Code Error $code${ENDCOLOR}"; exit $code))
+        printf "\n${ORANGE}Execute APP PACMAN $app_pacman${ENDCOLOR}\n"
+        sleep 2
+        # --noconfirm: no pedir confirmación
+        # --needed: solo instalar si no está ya instalado
+        # > /dev/null: ocultar salida estándar
+        sudo pacman -S --noconfirm --needed $app_pacman > /dev/null \
+            && (echo -e "$app_pacman ${GREEN}>>>>> OK${ENDCOLOR}"; exit 0) \
+            || (code=$?; echo -e "$app_pacman ${RED}>>>>> FAILED${ENDCOLOR}"; \
+            (echo -e "${MAGENTA}Code Error $code${ENDCOLOR}"; exit $code))
     done
 }
 
+# Instala yay (AUR helper)
+# yay permite instalar paquetes del Arch User Repository
 doInstallYay(){
     git clone https://aur.archlinux.org/yay.git
     cd yay
-    echo y | makepkg -si
-    cd 
+    echo y | makepkg -si  # makepkg compila y -si instala el paquete
+    cd
 }
 
+# Instala paquetes desde AUR usando yay
+# Requiere que yay ya esté instalado
 doInstallAppYay(){
     for app_yay in ${list_yay[@]}; do
-        printf "\n${ORANGE}Execute APP YAY $app_yay${ENDCOLOR}\n" ; sleep 2
-        yay -S --noconfirm  $app_yay > /dev/null && (echo -e "$app_yay ${GREEN}OK${ENDCOLOR}"; exit 0) || (code=$?; echo -e "$app_yay ${RED}FAILED${ENDCOLOR}"; (echo -e "${BLUE}Code Error $code${ENDCOLOR}"; exit $code))
+        printf "\n${ORANGE}Execute APP YAY $app_yay${ENDCOLOR}\n"
+        sleep 2
+        yay -S --noconfirm $app_yay > /dev/null \
+            && (echo -e "$app_yay ${GREEN}OK${ENDCOLOR}"; exit 0) \
+            || (code=$?; echo -e "$app_yay ${RED}FAILED${ENDCOLOR}"; \
+            (echo -e "${BLUE}Code Error $code${ENDCOLOR}"; exit $code))
     done
 }
 
+# Instala Oh My Zsh (framework de configuración para Zsh)
+# Mejora la experiencia de la terminal con temas y plugins
 doInstallOhMyZsh(){
+    # --unattended: instalación sin interacción
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
 }
 
+# Instala plugins adicionales para Zsh
+# - syntax-highlighting: resalta comandos válidos/inválidos
+# - autosuggestions: sugiere comandos basados en historial
 doZshPlugins(){
-    git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
-    git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+    git clone https://github.com/zsh-users/zsh-syntax-highlighting.git \
+        ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
+    git clone https://github.com/zsh-users/zsh-autosuggestions \
+        ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
 }
 
+# Instala Powerlevel10k (tema avanzado para Zsh)
+# Proporciona un prompt personalizable y con información contextual
 doInstallPowerlevelok(){
-    git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k
+    git clone --depth=1 https://github.com/romkatv/powerlevel10k.git \
+        ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k
 }
 
+# Instala dotfiles personalizados desde GitHub
+# Los dotfiles contienen configuraciones de aplicaciones (.vimrc, .zshrc, etc.)
 doInstallDOTFILES(){
     curl -Lks https://raw.githubusercontent.com/eybolo/dotfiles/main/.bin/install.sh | /bin/bash
 }
 
+# Configura el tema visual de Kitty (terminal)
+# Descarga e instala el tema Spacedust
 doThemeKitty(){
     THEME=https://raw.githubusercontent.com/dexpota/kitty-themes/master/themes/Spacedust.conf
     wget "$THEME" -P ~/.config/kitty/kitty-themes/themes
-    ln -sf /home/$user/.config/kitty/kitty-themes/themes/Spacedust.conf /home/$user/.config/kitty/theme.conf
+    # Crear symlink al tema activo
+    ln -sf /home/$user/.config/kitty/kitty-themes/themes/Spacedust.conf \
+        /home/$user/.config/kitty/theme.conf
 }
 
+# Instala gemas de Ruby
+# colorls: comando 'ls' mejorado con iconos y colores
 doGemRuby(){
     gem install colorls
 }
 
+# Crea enlaces simbólicos de configuración a ubicaciones del sistema
+# Permite que configuraciones personales se apliquen globalmente
 doLinks(){
-    /usr/bin/sudo ln -sf /home/$user/.bin/init.lua /usr/share/awesome/lib/awful/hotkeys_popup/keys/init.lua
-    /usr/bin/sudo ln -sf /home/$user/.bin/kitty.lua /usr/share/awesome/lib/awful/hotkeys_popup/keys/kitty.lua
-    /usr/bin/sudo ln -sf /home/$user/.bin/30-touchpad.conf /usr/share/X11/xorg.conf.d/30-touchpad.conf 
-    /usr/bin/sudo ln -sf /home/$user/.config/keyd/default.conf /etc/keyd/default.conf
-
+    # Hotkeys personalizadas para Awesome WM
+    /usr/bin/sudo ln -sf /home/$user/.bin/init.lua \
+        /usr/share/awesome/lib/awful/hotkeys_popup/keys/init.lua
+    /usr/bin/sudo ln -sf /home/$user/.bin/kitty.lua \
+        /usr/share/awesome/lib/awful/hotkeys_popup/keys/kitty.lua
+    
+    # Configuración del touchpad
+    /usr/bin/sudo ln -sf /home/$user/.bin/30-touchpad.conf \
+        /usr/share/X11/xorg.conf.d/30-touchpad.conf
+    
+    # Configuración de keyd (remapeo de teclado)
+    /usr/bin/sudo ln -sf /home/$user/.config/keyd/default.conf \
+        /etc/keyd/default.conf
 }
 
+# Habilita servicios systemd para que se inicien automáticamente al boot
 doEnableServices(){
-    /usr/bin/sudo systemctl enable NetworkManager 
-    /usr/bin/sudo systemctl enable sshd
-    /usr/bin/sudo systemctl enable keyd 
-    /usr/bin/sudo systemctl enable betterlockscreen@$USER
+    /usr/bin/sudo systemctl enable NetworkManager  # Gestión de red
+    /usr/bin/sudo systemctl enable sshd            # Servidor SSH
+    /usr/bin/sudo systemctl enable keyd            # Daemon de remapeo de teclado
+    /usr/bin/sudo systemctl enable betterlockscreen@$USER  # Pantalla de bloqueo
 }
 
+# ===========================
+# Ejecución principal
+# ===========================
+
+# Array de funciones a ejecutar secuencialmente
 run_user=(
-doCreateFolder
-doInstallAppPacman
-doInstallYay
-doInstallAppYay
-doInstallOhMyZsh
-doZshPlugins
-doInstallPowerlevelok
-doInstallDOTFILES
-doThemeKitty
-doGemRuby
-doLinks
-doEnableServices
+    doCreateFolder
+    doInstallAppPacman
+    doInstallYay
+    doInstallAppYay
+    doInstallOhMyZsh
+    doZshPlugins
+    doInstallPowerlevelok
+    doInstallDOTFILES
+    doThemeKitty
+    doGemRuby
+    doLinks
+    doEnableServices
 )
 
-
+# Ejecutar cada función del array en orden
 for run in ${run_user[@]}; do
-    printf "\n${BLUE}Execute $run${ENDCOLOR}\n" ; sleep 2
+    printf "\n${BLUE}Execute $run${ENDCOLOR}\n"
+    sleep 2
     status_command $run
 done
 
