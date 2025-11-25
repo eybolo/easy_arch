@@ -90,11 +90,16 @@ list_yay=(
     keyd-git rofi-greenclip
 
     # temas GTK
-    otis-theme-git  papirus-icon-theme-git
-    #tela-icon-theme
-    #openrgb-git
-    #lf-git
-    #picom-jonaburg-git 
+    otis-theme-git  
+    
+    # Iconos  tema
+    papirus-icon-theme-git
+    #tela-icon-theme lo descargamos desde la funcion doInstallTelaIcons
+    # porque desde yay tarda mas de 20 min.
+
+    # Mouse cursor
+    bibata-cursor-git
+
 )
 
 # ===========================
@@ -162,6 +167,31 @@ doInstallAppYay(){
             || (code=$?; echo -e "$app_yay ${RED}FAILED${ENDCOLOR}"; \
             (echo -e "${BLUE}Code Error $code${ENDCOLOR}"; exit $code))
     done
+}
+
+# Instala Tela Icon Theme manualmente (método rápido)
+# Evita compilación lenta desde AUR
+# Instala solo las variantes seleccionadas
+doInstallTelaIcons(){
+    echo -e "${ORANGE}Installing Tela Icons (fast method)...${ENDCOLOR}"
+    
+    # Crear directorio temporal
+    cd /tmp
+    
+    # Clonar repositorio
+    git clone --depth=1 https://github.com/vinceliuice/Tela-icon-theme.git
+    cd Tela-icon-theme
+    
+    # Instalar variantes específicas
+    # Opciones: standard, black, blue, brown, green, grey, orange, 
+    #           pink, purple, red, yellow, manjaro, ubuntu, nord
+    
+    # Purple (similar a Dracula) y Black (oscuro puro)
+    ./install.sh dracula 
+    
+    # Limpieza
+    cd ~
+    rm -rf /tmp/Tela-icon-theme
 }
 
 # Instala Oh My Zsh (framework de configuración para Zsh)
@@ -246,6 +276,7 @@ run_user=(
     doInstallAppPacman
     doInstallYay
     doInstallAppYay
+    doInstallTelaIcons 
     doInstallOhMyZsh
     doZshPlugins
     doInstallPowerlevelok
