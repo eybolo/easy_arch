@@ -235,7 +235,7 @@ doGemRuby(){
 doInstallKeydConfig(){
 
     # Crea el directorio si no existe e instala el archivo con permisos correctos
-    sudo install -Dm644 ~/.config/keyd/default.conf /etc/keyd/default.conf
+    sudo install -Dm644 ~/bin/keyd/default.conf /etc/keyd/default.conf
 }
 
 # Configura el touchpad (notebook) en X11 instalando el archivo de libinput
