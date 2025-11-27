@@ -231,6 +231,13 @@ doGemRuby(){
     gem install colorls
 }
 
+# Configurar keyd mapeo de teclado
+doInstallKeydConfig(){
+
+    # Crea el directorio si no existe e instala el archivo con permisos correctos
+    sudo install -Dm644 ~/.config/keyd/default.conf /etc/keyd/default.conf
+}
+
 # Configura el touchpad (notebook) en X11 instalando el archivo de libinput
 # en /etc/X11/xorg.conf.d/. 
 doTouchPad() {
@@ -265,6 +272,7 @@ run_user=(
     doInstallPowerlevelok
     doInstallDOTFILES
     doGemRuby
+    doInstallKeydConfig
     doTouchPad
     doEnableServices
 )
