@@ -112,6 +112,7 @@ doCreateFolder(){
     path_folder=(
         $HOME/project              # Proyectos personales
         $HOME/code                 # Código fuente
+        $HOME/bin                  # Script o codigo personalizados
         $HOME/app                  # Aplicaciones descargadas
         $HOME/tmp                  # Archivos temporales
         $HOME/download             # Descargas
@@ -221,17 +222,7 @@ doInstallPowerlevelok(){
 # Instala dotfiles personalizados desde GitHub
 # Los dotfiles contienen configuraciones de aplicaciones (.vimrc, .zshrc, etc.)
 doInstallDOTFILES(){
-    curl -Lks https://raw.githubusercontent.com/eybolo/dotfiles/main/.bin/install.sh | /bin/bash
-}
-
-# Configura el tema visual de Kitty (terminal)
-# Descarga e instala el tema Spacedust
-doThemeKitty(){
-    THEME=https://raw.githubusercontent.com/dexpota/kitty-themes/master/themes/Spacedust.conf
-    wget "$THEME" -P ~/.config/kitty/kitty-themes/themes
-    # Crear symlink al tema activo
-    ln -sf /home/$user/.config/kitty/kitty-themes/themes/Spacedust.conf \
-        /home/$user/.config/kitty/theme.conf
+    curl -Lks https://raw.githubusercontent.com/eybolo/dotfiles/main/bin/install_dotfiles.sh | /bin/bash
 }
 
 # Instala gemas de Ruby
@@ -240,23 +231,15 @@ doGemRuby(){
     gem install colorls
 }
 
-# Crea enlaces simbólicos de configuración a ubicaciones del sistema
-# Permite que configuraciones personales se apliquen globalmente
-doLinks(){
-    # Hotkeys personalizadas para Awesome WM
-    /usr/bin/sudo ln -sf /home/$user/.bin/init.lua \
-        /usr/share/awesome/lib/awful/hotkeys_popup/keys/init.lua
-    /usr/bin/sudo ln -sf /home/$user/.bin/kitty.lua \
-        /usr/share/awesome/lib/awful/hotkeys_popup/keys/kitty.lua
-    
-    # Configuración del touchpad
-    /usr/bin/sudo ln -sf /home/$user/.bin/30-touchpad.conf \
-        /usr/share/X11/xorg.conf.d/30-touchpad.conf
-    
-    # Configuración de keyd (remapeo de teclado)
-    /usr/bin/sudo ln -sf /home/$user/.config/keyd/default.conf \
-        /etc/keyd/default.conf
+# Configura el touchpad (notebook) en X11 instalando el archivo de libinput
+# en /etc/X11/xorg.conf.d/. 
+doTouchPad() {
+
+    # Crea el directorio si no existe e instala el archivo con permisos correctos
+    sudo install -Dm644 ~/bin/30-touchpad.conf \
+        /etc/X11/xorg.conf.d/30-touchpad.conf
 }
+
 
 # Habilita servicios systemd para que se inicien automáticamente al boot
 doEnableServices(){
@@ -281,9 +264,8 @@ run_user=(
     doZshPlugins
     doInstallPowerlevelok
     doInstallDOTFILES
-    doThemeKitty
     doGemRuby
-    doLinks
+    doTouchPad
     doEnableServices
 )
 
