@@ -66,13 +66,13 @@ list_pacman=(
     bluez bluez-utils  
 
     # Audio
-    pulseaudio pulseaudio-alsa pavucontrol alsa-utils
+    pipewire pipewire-alsa pipewire-pulse pipewire-jack pavucontrol alsa-utils
 
     # Fuentes
     ttc-iosevka ttf-font-awesome otf-cascadia-code inter-font ttf-hack-nerd
 
     # Editoores y Desarrollo
-    base-devel nano vim git go nodejs ruby npm 
+    base-devel nano gvim git go nodejs ruby npm 
 )
 
 # Paquetes de AUR (Arch User Repository) - requieren yay
